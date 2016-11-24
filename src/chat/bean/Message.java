@@ -50,11 +50,6 @@ public abstract class Message {
 	// 唯一标识的值
 	private String id;
 
-	// 标识的长度
-	private int toIdLength;
-	// 唯一标识的值
-	private String toId;
-
 	// 指令
 	private int command;
 	// 时间
@@ -71,19 +66,6 @@ public abstract class Message {
 
 	public void setId(String id) {
 		this.id = id;
-	}
-
-	public int getToIdLength() {
-		return (int) (toId == null ? 0 : toId.getBytes(Configuration
-				.getCharset()).length);
-	}
-
-	public String getToId() {
-		return toId;
-	}
-
-	public void setToId(String toId) {
-		this.toId = toId;
 	}
 
 	public int getType() {
@@ -116,11 +98,6 @@ public abstract class Message {
 
 	public void setMagic(int magic) {
 		this.magic = magic;
-	}
-
-	@Override
-	public String toString() {
-		return "[ from " + id + " to  " + toId + "]";
 	}
 	
 	/**
