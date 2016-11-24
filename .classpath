@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="lib" path="lib/c3p0-0.9.5.1.jar"/>
+	<classpathentry kind="lib" path="lib/jfinal-2.2-bin.jar"/>
+	<classpathentry kind="lib" path="lib/mchange-commons-java-0.2.10.jar"/>
+	<classpathentry kind="lib" path="lib/mysql-connector-java-5.1.39-bin.jar"/>
+	<classpathentry kind="lib" path="lib/netty-all-4.1.6.Final.jar" sourcepath="E:/software/netty-4.1.6.Final/netty-4.1.6.Final/jar/all-in-one/netty-all-4.1.6.Final-sources.jar">
+		<attributes>
+			<attribute name="source_encoding" value="UTF-8"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
