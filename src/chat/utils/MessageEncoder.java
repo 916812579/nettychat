@@ -4,7 +4,6 @@ package chat.utils;
 import java.util.List;
 
 import chat.bean.Message;
-import chat.bean.TextMessage;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
@@ -20,10 +19,15 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
 		if (msg == null) {
 			return;
 		}
-		ByteBuf buf = MessageProcessor.encode(ctx, msg);
-		if (buf != null) {
-			out.add(buf);
-		}	
+		try {
+			ByteBuf buf = MessageCoder.encode(ctx, msg);
+			if (buf != null) {
+				out.add(buf);
+			}
+		} catch(Exception e) {
+			e.printStackTrace();
+			throw e;
+		}		
 	}
 
 }

@@ -1,10 +1,16 @@
 package chat.bean;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 
+import java.lang.reflect.Field;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.List;
 
+import chat.annotation.Data;
+import chat.utils.ClassUtils;
 import chat.utils.Configuration;
 
 /**
@@ -25,40 +31,29 @@ public abstract class Message {
 	// 文本消息
 	public static final int TEXT = 0x01;
 
+	// ping消息
+	public static final int PING = 0x0;
+
 	public static final int MAGIC = 0x55;
-	
-	// 消息固定部分的长度
-	public static final int FIX_LEN = 32;
-	
-	// 一个字节多少位
-	public static final int BIT_SIZE = 8;
-	
-	// 整数字节数
-	public static final int INT_SIZE = Integer.SIZE / BIT_SIZE;
-	
-	// long 字节数
-	public static final int LONG_SIZE = Long.SIZE / BIT_SIZE;
 
 	// 魔数，主要代表是不是可以处理的消息
+	@Data(type = DataType.INT)
 	private int magic = MAGIC;
 
 	// 消息的类型
+	@Data(type = DataType.INT)
 	private int type;
 
-	// 标识的长度
-	private int idLength;
 	// 唯一标识的值
+	@Data(type = DataType.STRING)
 	private String id;
 
 	// 指令
+	@Data(type = DataType.INT)
 	private int command;
 	// 时间
+	@Data(type = DataType.LONG)
 	private long time;
-
-	public int getIdLength() {
-		return (int) (id == null ? 0
-				: id.getBytes(Configuration.getCharset()).length);
-	}
 
 	public String getId() {
 		return id;
@@ -99,14 +94,110 @@ public abstract class Message {
 	public void setMagic(int magic) {
 		this.magic = magic;
 	}
-	
+
 	/**
-	 *  编码
+	 * 编码
+	 * 
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
 	 */
-	public abstract ByteBuf encode(ChannelHandlerContext ctx, Message msg);
-	
+	public ByteBuf encode(ChannelHandlerContext ctx, Message msg)
+			throws IllegalArgumentException, IllegalAccessException {
+		Class<? extends Message> clazz = msg.getClass();
+		List<Field> fields = ClassUtils.getAllDeclaredFields(clazz);
+		List<Field> datas = new ArrayList<Field>();
+		int len = 0;
+		for (Field filed : fields) {
+			Data an = filed.getAnnotation(Data.class);
+			if (an != null) {
+				filed.setAccessible(true);
+				datas.add(filed);
+				DataType type = an.type();
+				int size = type.getLength();
+				if (size > 0) {
+					len += size;
+				} else {
+					switch (type) {
+					case STRING:
+						String value = (String) filed.get(this);
+						len += DataType.getLength(DataType.INT);
+						if (value != null) {
+							len += value.getBytes(Configuration.getCharset()).length;
+						}
+						break;
+					}
+				}
+			}
+		}
+		ByteBuf buf = ctx.alloc().buffer(len);
+		for (Field filed : datas) {
+			Data an = filed.getAnnotation(Data.class);
+			DataType type = an.type();
+			switch (type) {
+			case INT:
+				buf.writeInt(filed.getInt(this));
+				break;
+			case LONG:
+				buf.writeLong(filed.getLong(this));
+				break;
+			case STRING:
+				String value = (String) filed.get(this);
+				if (value != null) {
+					byte[] datats = value.getBytes(Configuration.getCharset());
+					buf.writeInt(datats.length);
+					buf.writeBytes(datats);
+				} else {
+					buf.writeInt(0);
+				}
+				break;
+			}
+		}
+		return buf;
+	}
+
 	/**
 	 * 解码
+	 * @throws IllegalAccessException 
+	 * @throws IllegalArgumentException 
 	 */
-	public abstract void decode(ByteBuf buf);
+	public void decode(ByteBuf buf) throws IllegalArgumentException, IllegalAccessException {
+		Class<? extends Message> clazz = this.getClass();
+		List<Field> fields = ClassUtils.getAllDeclaredFields(clazz);
+		int pos = 0;
+		for (Field field : fields) {
+			Data an = field.getAnnotation(Data.class);
+			if (an != null) {
+				field.setAccessible(true);
+				DataType type = an.type();
+				switch (type) {
+				case INT:
+					field.set(this, buf.getInt(pos));
+					pos += type.getLength();
+					break;
+				case LONG:
+					field.set(this, buf.getLong(pos));
+					pos += type.getLength();
+					break;
+				case STRING:
+					int sL = buf.getInt(pos);
+					pos += DataType.getLength(DataType.INT);
+					CharSequence seq = buf.getCharSequence(pos, sL, Configuration.getCharset());
+					pos += sL;
+					if (seq != null) {
+						field.set(this, seq.toString());
+					}			
+					break;
+				}
+			}
+		}
+	}
+
+	public static void main(String[] args) {
+		Class<? extends Message> clazz = Message.class;
+		Field[] fields = clazz.getDeclaredFields();
+		for (Field field : fields) {
+			System.out.println(field.getName());
+		}
+
+	}
 }

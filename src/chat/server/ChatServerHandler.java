@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
 import chat.bean.Message;
-import chat.utils.MessageProcessor;
+import chat.utils.ServerMessageProcessor;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -28,7 +28,7 @@ public class ChatServerHandler extends SimpleChannelInboundHandler<Message> {
 	protected void channelRead0(ChannelHandlerContext ctx, Message msg)
 			throws Exception {
 		Channel channel = ctx.channel();
-		MessageProcessor.process(channel, msg, map);
+		ServerMessageProcessor.process(channel, msg, map);
 	}
 
 	@Override
